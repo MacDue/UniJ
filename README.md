@@ -30,14 +30,7 @@ And yes, you can send any objects back and forth and don't have to worry about c
 
 ## Get it!
 
-Java Server
-
-- Standalone .jar
-- Maven repository (soon!)
-
-JavaScript client
-
-- Get it here
+There is a server and a client available in the [releases](https://github.com/tepf/UniJ/releases). And soon there will be maven repository available.
 
 ## FAQ
 
