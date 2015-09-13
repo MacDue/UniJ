@@ -32,7 +32,7 @@ And yes, you can send any objects back and forth and don't have to worry about c
 
 Java Server
 
-- Standalone .jar (soon!)
+- Standalone .jar
 - Maven repository (soon!)
 
 JavaScript client
