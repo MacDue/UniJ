@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UniJ Example</title>
+    <script type="application/javascript" src="unij-client-browser-0.1.0.js"></script>
+</head>
+<body>
+
+    <p style="font-size: 64px">open the console!<p>
+    <p style="font-size: 32px">... probably ctrl+shift+i</p>
+
+    <script type="application/javascript">
+
+        UniJ.addProcedure("showThemApples", function(msg) { console.log(msg);});
+
+        UniJ.onReady(function() {
+            // After connection, otherwise server will overwrite your name
+            UniJ.setClientName("because I can");
+            UniJ.execute("printToConsole", "Hello there!");
+            UniJ.execute("destroyAndShow", "This was a sentence once");
+        });
+
+    </script>
+</body>
+</html>

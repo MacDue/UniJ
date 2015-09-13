@@ -1,0 +1,42 @@
+group "tepf.unij"
+version "0.1.0"
+
+apply plugin: "java"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile "junit:junit:+"
+
+    compile "org.eclipse.jetty:jetty-server:+"
+    compile "org.eclipse.jetty.websocket:javax-websocket-server-impl:+"
+    compile "org.eclipse.jetty:jetty-servlets:+"
+    compile "com.fasterxml.jackson.core:jackson-databind:+"
+}
+
+sourceSets {
+    main.java.srcDir "src/main/java/"
+}
+
+// Generate standalone .jar
+jar {
+    from configurations.compile.collect { zipTree it }
+    exclude "**/JSLibraryGenerator.class"
+    exclude "**/example"
+    exclude "**/resources"
+}
+
+// Generate JavaScript libraries for the browser and Node.js
+task jsLibrary(type: JavaExec) {
+    main = "unij.JSLibraryGenerator"
+    classpath = sourceSets.main.runtimeClasspath
+    args version
+}
+
+configure(jsLibrary) {
+    group = BasePlugin.BUILD_GROUP
+    description = "Generate .js client libraries for browser and node.js"
+}
+
