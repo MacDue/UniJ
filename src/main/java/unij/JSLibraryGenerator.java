@@ -2,6 +2,7 @@ package unij;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class JSLibraryGenerator {
@@ -9,33 +10,38 @@ public class JSLibraryGenerator {
 
 		String version = args[0];
 
-		String basePath = System.getProperty("user.dir") + File.separator + "src"
+		String clientPath = System.getProperty("user.dir") + File.separator + "src"
 				+ File.separator + "main" + File.separator + "js" + File.separator + "unij"
 				+ File.separator;
 
 		String buildPath = System.getProperty("user.dir") + File.separator + "build" + File.separator
 				+ "libs" + File.separator;
 
-		String sourceCode = new String(Files.readAllBytes(Paths.get(basePath + "unij-client.js")));
+		String examplePath = System.getProperty("user.dir") + File.separator + "src" + File.separator
+				+ "main" + File.separator + "resources" + File.separator + "example" + File.separator;
+
+		// Read base client code
+		String sourceCode = new String(Files.readAllBytes(Paths.get(clientPath + "unij-client.js")));
 
 		String nodeJSVersion = createNodeJSVersion(sourceCode);
 		String browserVersion = createBrowserVersion(sourceCode);
 
+		// Generate production versions
 		Files.write(Paths.get(buildPath + "unij-client-nodejs-" + version + ".js"),
 				nodeJSVersion.getBytes());
 		Files.write(Paths.get(buildPath + "unij-client-browser-" + version + ".js"),
 				browserVersion.getBytes());
 
-		// Generate for example
-		Files.write(Paths.get(System.getProperty("user.dir") + File.separator + "src" + File.separator
-						+ "main" + File.separator + "resources" + File.separator + "example"
-						+ File.separator + "unij-client-browser-" + version + ".js"),
-				browserVersion.getBytes());
+		// Delete all libraries in example
+		Files.list(Paths.get(examplePath))
+				.map(Path::toFile)
+				.filter(file -> file.getName().contains("unij-client"))
+				.forEach(File::delete);
 
 		// Generate for example
-		Files.write(Paths.get(System.getProperty("user.dir") + File.separator + "src" + File.separator
-						+ "main" + File.separator + "resources" + File.separator + "example"
-						+ File.separator + "unij-client-nodejs-" + version + ".js"),
+		Files.write(Paths.get(examplePath + "unij-client-browser-" + version + ".js"),
+				browserVersion.getBytes());
+		Files.write(Paths.get(examplePath + "unij-client-nodejs-" + version + ".js"),
 				nodeJSVersion.getBytes());
 	}
 
