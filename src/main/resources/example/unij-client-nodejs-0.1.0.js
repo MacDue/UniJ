@@ -1,3 +1,5 @@
+"use strict";
+var WebSocket = require("ws");
 function UniJClient(serverAddress) {
 
     var self = this;
@@ -145,3 +147,5 @@ function UniJClient(serverAddress) {
         console.log(formatLog(message));
     }
 }
+
+module.exports = function(address) { return new UniJClient(address); }

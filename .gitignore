@@ -1,5 +1,20 @@
+# Intellij
 .idea/
 UniJ.iml
-build
+
+# Gradle
 .gradle
+build/
+
+# Jetty
 src/main/resources/jetty-logging.properties
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+
+.mtj.tmp/
+
+

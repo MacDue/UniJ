@@ -27,15 +27,21 @@ public class JSLibraryGenerator {
 				browserVersion.getBytes());
 
 		// Generate for example
-		//Files.write(Paths.get(System.getProperty("user.dir") + File.separator + "src" + File.separator
-		//				+ "main" + File.separator + "resources" + File.separator + "example"
-		//				+ File.separator + "unij-client-browser-" + version + ".js"),
-		//		browserVersion.getBytes());
+		Files.write(Paths.get(System.getProperty("user.dir") + File.separator + "src" + File.separator
+						+ "main" + File.separator + "resources" + File.separator + "example"
+						+ File.separator + "unij-client-browser-" + version + ".js"),
+				browserVersion.getBytes());
 
+		// Generate for example
+		Files.write(Paths.get(System.getProperty("user.dir") + File.separator + "src" + File.separator
+						+ "main" + File.separator + "resources" + File.separator + "example"
+						+ File.separator + "unij-client-nodejs-" + version + ".js"),
+				nodeJSVersion.getBytes());
 	}
 
 	private static String createNodeJSVersion(String sourceCode) {
-		return "var WebSocket = require(\"ws\");\n" + "module.exports = " + sourceCode + ";";
+		return "\"use strict\";\nvar WebSocket = require(\"ws\");\n" + sourceCode
+				+ "\nmodule.exports = function(address) { return new UniJClient(address); }";
 	}
 
 	private static String createBrowserVersion(String sourceCode) {

@@ -22,10 +22,6 @@ function UniJClient(serverAddress) {
         }
     };
 
-
-
-
-
     /**
      * Sends a proposal to change this clients name. Server then changes it or not
      * @param newName
@@ -83,13 +79,13 @@ function UniJClient(serverAddress) {
             } else {
                 logToServer("I don't know procedure with name \"" + message.pro + "\"");
             }
-        }
+        };
 
         websocket.onclose = function(event) {
             var reason = (event.reason === "") ? "unexpected closing" : event.reason;
             log("Lost connection from server because of " + reason);
-        }
-    }
+        };
+    };
 
     this.execute = function (remoteProcedureName, parameters) {
         if (websocket !== undefined) {
@@ -115,8 +111,7 @@ function UniJClient(serverAddress) {
             if (validWS.test(serverAddress)) {
                 return serverAddress + "/unij";
             } else {
-                throw "An invalid WebSocket address was passed to UniJ: \"" + serverAddress
-                        + "\". Try something like \"ws://localhost:7777\"";
+                throw "An invalid WebSocket address was passed to UniJ: \"" + serverAddress + "\". Try something like \"ws://localhost:7777\"";
             }
         }
     }
@@ -130,7 +125,7 @@ function UniJClient(serverAddress) {
 
     function logToServer(message) {
         self.execute("unijLog", formatLog(message));
-    };
+    }
 
     /**
      * Construct a client log message
@@ -150,7 +145,6 @@ function UniJClient(serverAddress) {
     function log(message) {
         console.log(formatLog(message));
     }
-
 }
 
 var UniJ = new UniJClient();

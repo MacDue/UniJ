@@ -9,6 +9,8 @@ import java.util.concurrent.TimeUnit;
 public class LittleExample {
     public static void main (String[] args) throws Exception {
 
+	    // SSL does not work with Node.js (seems to be a bug in module "ws")
+
 	    // If a keystore is found then UniJ will automatically use SSL
 	    // Ideally you should do this a bit more securely ;)
 	    System.setProperty("unij.keystore.path", "src/main/resources/example/server.keystore");
