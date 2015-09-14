@@ -26,6 +26,12 @@ public class JSLibraryGenerator {
 		Files.write(Paths.get(buildPath + "unij-client-browser-" + version + ".js"),
 				browserVersion.getBytes());
 
+		// Generate for example
+		//Files.write(Paths.get(System.getProperty("user.dir") + File.separator + "src" + File.separator
+		//				+ "main" + File.separator + "resources" + File.separator + "example"
+		//				+ File.separator + "unij-client-browser-" + version + ".js"),
+		//		browserVersion.getBytes());
+
 	}
 
 	private static String createNodeJSVersion(String sourceCode) {
@@ -33,6 +39,6 @@ public class JSLibraryGenerator {
 	}
 
 	private static String createBrowserVersion(String sourceCode) {
-		return sourceCode + "\nvar UniJ = new UniJClient();";
+		return "\"use strict\";\n" + sourceCode + "\nvar UniJ = new UniJClient();";
 	}
 }

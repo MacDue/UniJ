@@ -9,6 +9,8 @@ import org.eclipse.jetty.util.log.Logger;
 import javax.websocket.Endpoint;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -142,7 +144,7 @@ public class UniJ {
 	 */
 
 	public static void logToClient(String clientName, String message) {
-		execute(clientName, "unijLog", "UniJ Server : " + message);
+		execute(clientName, "unijLog", "UniJ Server: " + message);
 	}
 
 	/**
@@ -227,7 +229,7 @@ public class UniJ {
 						+ remoteProcedureName + "\"");
 			}
 		} else {
-			log("Client with name: \"" + clientName + "\" does not exist or has a different name");
+			log("Client \"" + clientName + "\" does not exist or has a different name");
 		}
 	}
 
@@ -323,6 +325,12 @@ public class UniJ {
 
 	public static int getNumberOfConnectedClients() {
 		return clients.size();
+	}
+
+	public static List<String> getAllConnectedClientNames() {
+		List<String> allNames = new LinkedList<>();
+		clients.forEachKey(Long.MAX_VALUE, allNames::add);
+		return allNames;
 	}
 
 	/**

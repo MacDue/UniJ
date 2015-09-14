@@ -15,9 +15,11 @@
         UniJ.addProcedure("showThemApples", function(msg) { console.log(msg);});
 
         UniJ.onReady(function() {
-            // After connection, otherwise server will overwrite your name
+
             UniJ.setClientName("because I can");
             UniJ.execute("printToConsole", "Hello there!");
+
+            // After connection, otherwise server will overwrite your name
             UniJ.execute("destroyAndShow", "This was a sentence once");
         });
 
