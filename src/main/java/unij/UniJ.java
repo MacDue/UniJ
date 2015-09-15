@@ -1,18 +1,13 @@
 package unij;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 import javax.websocket.Endpoint;
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class UniJ {
@@ -21,16 +16,11 @@ public class UniJ {
 	private static final Logger log = Log.getLog();
 
 	private static UniJServer server;
-	private final static ConcurrentHashMap<String, UniJEndpoint> clients = new ConcurrentHashMap<>();
-	private final static HashMap<String, UniJProcedure> localProcedures = new HashMap<>();
+	private final static HashMap<String, String> serverSettings = new HashMap<>();
 
 	private final static Map<String, Class<? extends Endpoint>> webSockets = new HashMap<>();
 
-	private final static ObjectWriter jsonWriter = new ObjectMapper().writer();
-
-	private final static HashMap<String, String> serverSettings = new HashMap<>();
-
-	// Default values
+	// Default values for UniJ
 	static {
 		serverSettings.put("port", "" + 7777);
 		serverSettings.put("securePort", "" + 7778);
@@ -42,7 +32,7 @@ public class UniJ {
 	}
 
 
-	/********************************* UniJ Methods *********************************/
+	/*** UniJ Standard Procedures ****************************************************************/
 
 
 	@Procedure("unijLog")
@@ -52,78 +42,17 @@ public class UniJ {
 
 	@Procedure("setClientName")
 	protected static void setClientName(String oldName, String newName) {
-
-		if (!clients.containsKey(oldName)) {
-			log("Client \"" + oldName + "\" failed changing its name because it is unknown");
-			logToClient(oldName, "Could not change your name to \"" + newName
-					+ "\", because I don't know you...");
-
-		} else if (clients.containsKey(newName)) {
-			log("Client \"" + oldName + "\" failed changing its name to \"" + newName
-					+ "\", because someone else is already named like that");
-			logToClient(oldName, "Could not change your name to \"" + newName
-					+ "\", because someone else already is named like that");
-		} else {
-			log("Client \"" + oldName + "\" changed its name to \"" + newName + "\"");
-			UniJEndpoint client = clients.remove(oldName);
-			clients.put(newName, client);
-
-			// Tell client its new name
-			UniJ.execute(newName, "setClientName", newName);
-
-			logToClient(newName, "You changed your name to \"" + newName + "\"");
-		}
-	}
-
-	/**
-	 * Add a client (equivalent to UniJEndpoint instance) to the pool of clients
-	 * @param name      Name of the client
-	 * @param client    Socket instance of the client
-	 * @throws IllegalArgumentException
-	 */
-
-	protected static void addClient(String name, UniJEndpoint client) throws IllegalArgumentException {
-		if (clients.containsKey(name)) {
-			throw new IllegalArgumentException("UniJ: Could not add a client with name: " + name
-					+ " because the name is taken");
-		} else {
-			clients.put(name, client);
-		}
-	}
-
-	/**
-	 * Remove a client (equivalent to UniJEndpoint instance) from the pool of clients
-	 * @param name      Name of the client
-	 */
-
-	protected static void removeClient(String name) {
-		if (clients.containsKey(name)) {
-			clients.remove(name);
-		} else {
-			log("Tried to remove client with name \"" + name + "\" but couldn't find it");
-		}
-	}
-
-	/**
-	 * Get the local procedure with given name
-	 * @param procedure
-	 * @return
-	 */
-
-	protected static UniJProcedure getProcedure(String procedure) {
-		return localProcedures.get(procedure);
+		UniJEndpoint.setClientName(oldName, newName);
 	}
 
 
-
-	/********************************* User Methods *********************************/
+	/*** UniJ User Methods ***********************************************************************/
 
 	/**
 	 * Start UniJ Server
 	 */
 
 	public static void start() {
-
 
 		server = new UniJServer(serverSettings, webSockets);
 
@@ -148,117 +77,59 @@ public class UniJ {
 	}
 
 	/**
-	 * Add a procedure which can be called by a remote client and executed by the passed executor
-	 * @param procedureName  Name of the procedure
-	 * @param executor       Either instance or class
-	 * @param procedure      To be executed when a remote procedure call from client happens
+	 * Add a procedure that UniJ clients can execute
+	 * @param procedureName     Name of the procedure
+	 * @param executor          Name of the executing instance
+	 * @param procedure         Actual method to be executed
 	 */
 
 	public static void addProcedure(String procedureName, Object executor, Method procedure) {
-		if (localProcedures.containsKey(procedureName)) {
-			log("unij.Procedure with name:\"" + procedureName + "\" was overwritten");
-		}
-		localProcedures.put(procedureName, new UniJProcedure(executor, procedure));
+		UniJEndpoint.addProcedure(procedureName, executor, procedure);
 	}
 
 	/**
-	 * Add a procedure which can be called by a remote client and executed by the passed executor.
-	 * Private methods can be executed as well.
-	 * @param procedureExecutor    Object annotated with Subscribe
+	 * Add a procedure by passing the class containing the procedures annotated with @Procedure.
+	 * If passed object is an instance then it will be used to execute the procedure.
+	 * @param procedureExecutor         Contains the procedures
+	 * @throws IllegalArgumentException
 	 */
 
 	public static void addProcedure(Object procedureExecutor) throws IllegalArgumentException {
-
-		Class procedureClass = procedureExecutor.getClass();
-
-		// For static methods
-		if (procedureExecutor instanceof Class) {
-			procedureClass = (Class) procedureExecutor;
-			procedureExecutor = null;
-		}
-
-		boolean hadNoProcedures = true;
-
-		for (Method method : procedureClass.getDeclaredMethods()) {
-			if (method.isAnnotationPresent(Procedure.class)) {
-				// Make private method accessible
-				method.setAccessible(true);
-
-				hadNoProcedures = false;
-				String name = method.getAnnotation(Procedure.class).value();
-				addProcedure(name, procedureExecutor, method);
-			}
-		}
-
-		if (hadNoProcedures) {
-			log(procedureClass.getSimpleName() + " was passed to" +
-					" UniJ.addProcedure() but had no @unij.Procedure annotations");
-		}
+		UniJEndpoint.addProcedure(procedureExecutor);
 	}
 
 	/**
 	 * Remove a local procedure with the given name
-	 * @param name
+	 * @param name      Name of the procedure to remove
 	 */
 
 	public static void removeProcedure(String name) {
-		UniJProcedure procedure = localProcedures.remove(name);
-		if (procedure == null) {
-			log("Tried to remove procedure with name \"" + name + "\" but it didn't exist");
-		}
+		UniJEndpoint.removeProcedure(name);
 	}
 
-
 	/**
-	 * Execute a remote procedure from client with given name
-	 * @param clientName            Name of the connected client
-	 * @param remoteProcedureName   Name of the remote procedure to execute
-	 * @param parameters            Parameters for the remote procedure
+	 * Execute a remote procedure from a specific client
+	 * @param clientName            Name of the client
+	 * @param remoteProcedureName   Name of the client's procedure
+	 * @param parameters            Parameters for the client's procedure
 	 */
 
 	public static void execute(String clientName, String remoteProcedureName, Object... parameters) {
-
-		UniJEndpoint client = clients.get(clientName);
-
-		if (client != null) {
-			try {
-				client.sendRaw("{\"pro\":\"" + remoteProcedureName +
-						"\",\"par\":" + jsonWriter.writeValueAsString(parameters) + "}");
-			} catch (JsonProcessingException e) {
-				log("Could not parse parameters of remote procedure execution:\""
-						+ remoteProcedureName + "\"");
-			}
-		} else {
-			log("Client \"" + clientName + "\" does not exist or has a different name");
-		}
+		UniJEndpoint.execute(clientName, remoteProcedureName, parameters);
 	}
 
 	/**
-	 * Execute a remote procedures of all connected clients
-	 * @param remoteProcedureName   Name of the remote procedure to execute
-	 * @param parameters            Parameters for the remote procedure
+	 * Execute a remote procedure on all connected clients
+	 * @param remoteProcedureName   Name of the procedure
+	 * @param parameters            Parameters for the procedure
 	 */
 
 	public static void executeAll(String remoteProcedureName, Object... parameters) {
-		if (clients.isEmpty()) {
-			log("There are no clients connected");
-		} else {
-			try {
-				String message = "{\"pro\":\"" + remoteProcedureName +
-						"\",\"par\":" + jsonWriter.writeValueAsString(parameters) + "}";
-
-				clients.forEach((name, socket) -> socket.sendRaw(message));
-
-			} catch (JsonProcessingException e) {
-				log("Could not parse parameters of remote procedure execution:\""
-						+ remoteProcedureName + "\"");
-				e.printStackTrace();
-			}
-		}
+		UniJEndpoint.executeAll(remoteProcedureName, parameters);
 	}
 
 	/**
-	 * Add a custom websocket to the UniJ server
+	 * Add a custom WebSocket to the UniJ server
 	 * @param address       Relative websocket adress
 	 * @param websocket     Websocket class to build
 	 */
@@ -324,23 +195,31 @@ public class UniJ {
 	 */
 
 	public static int getNumberOfConnectedClients() {
-		return clients.size();
-	}
-
-	public static List<String> getAllConnectedClientNames() {
-		List<String> allNames = new LinkedList<>();
-		clients.forEachKey(Long.MAX_VALUE, allNames::add);
-		return allNames;
+		return UniJEndpoint.getNumberOfConnectedClients();
 	}
 
 	/**
-	 * Get the relative path of the standard UniJ websocket
-	 * @return
+	 * Get all the client names in a Set
+	 * @return      Set of client names
+	 */
+
+	public static Set<String> getAllConnectedClientNames() {
+		return UniJEndpoint.getClientNames();
+	}
+
+	/**
+	 * Get the relative path of the standard UniJ WebSocket
+	 * @return      Relative WebSocket path
 	 */
 
 	public static String getUniJWebSocketPath() {
 		return serverSettings.get("uniJWebSocketPath");
 	}
+
+	/**
+	 * Stop the UniJ server
+	 * @throws Exception
+	 */
 
 	public static void stop() throws Exception {
 		server.stop();
@@ -351,7 +230,7 @@ public class UniJ {
 	 */
 
 	public static void waitForFirstClient() {
-		while (clients.isEmpty())  {
+		while (UniJEndpoint.getNumberOfConnectedClients() < 1)  {
 			try {
 				TimeUnit.SECONDS.sleep(1);
 			} catch (InterruptedException e) {
@@ -361,9 +240,22 @@ public class UniJ {
 		}
 	}
 
+	/**
+	 * Set the number of clients that are allowed to connect concurrently
+	 * @param clientsAllowed    Number of clients
+	 */
+
+	public static void setMaxConnectedClients(int clientsAllowed) {
+		UniJEndpoint.setMaxClients(clientsAllowed);
+	}
+
+	/**
+	 * Set the host name of the UniJ server
+	 * @param hostName      Hostname .i.e "127.0.0.1"
+	 */
+
 	public static void setHostName(String hostName) {
 		serverSettings.put("hostName", hostName);
 	}
-
 
 }
