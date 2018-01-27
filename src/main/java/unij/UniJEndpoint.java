@@ -37,7 +37,8 @@ public class UniJEndpoint extends Endpoint implements MessageHandler.Whole<Strin
 	@Override
 	public void onOpen(Session session, EndpointConfig config) {
 		// ID = "websocket-X" -> "X"
-		this.clientName = session.getId().substring(10);
+    String sessionId = session.getId();
+		this.clientName = sessionId.substring(0, Math.min(sessionId.length(), 10));
 		this.remoteEndpoint = session.getAsyncRemote();
 		
 		if (clientPool.size() < maxClients) {
